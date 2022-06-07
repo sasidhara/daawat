@@ -1,0 +1,353 @@
+﻿Build1=Default,Daawat.Feedback
+File1=1.bal
+File10=verysatisfied1.jpg
+File2=Dawat2.png
+File3=delighted.jpg
+File4=feedback.bal
+File5=notsatisfied1.jpg
+File6=notsatisfied2.jpg
+File7=poor1.jpg
+File8=satisfied2.png
+File9=satisfied3.png
+FileGroup1=Default Group
+FileGroup10=Default Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+FileGroup4=Default Group
+FileGroup5=Default Group
+FileGroup6=Default Group
+FileGroup7=Default Group
+FileGroup8=Default Group
+FileGroup9=Default Group
+Group=Default Group
+Library1=core
+Library2=network
+Library3=phone
+Library4=randomaccessfile
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.basic4ppc.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="4" android:targetSdkVersion="14"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~'End of default text.~\n~
+Module1=AsyncStreamsObject
+NumberOfFiles=10
+NumberOfLibraries=4
+NumberOfModules=1
+Version=9.801
+@EndOfDesignText@
+#Region  Project Attributes 
+	#ApplicationLabel: Daawat Feedback
+	#VersionCode: 1 
+	#VersionName: 
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: portrait 
+	#CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes 
+	#FullScreen: False
+	#IncludeTitle: True
+#End Region
+
+Sub Process_Globals
+	'portrait
+	Private astreamO As AsyncStreamsObject
+	Private server As ServerSocket
+	Private client As Socket
+	Private port As Int = 32118
+	Private ip As String
+	Type Person (First As String, Last As String, Animal As String)
+End Sub
+
+Sub Globals
+	Dim btnFeedback As Button
+	Dim txtIP As EditText
+	Dim lblStatus As Label
+	Dim Panel1 As Panel
+	Dim txtAnimal As EditText
+	Dim txtLast As EditText
+	Dim txtFirst As EditText
+	Dim btnSendFile As Button
+	Dim btnSendDrawing As Button
+	Dim btnConnect As Button
+	Dim lblMyIP As Label
+	Dim btnSendForm As Button
+	Dim btnSendNumber As Button
+	Private cvs As Canvas
+	Dim imgpoor As ImageView
+	Dim imgNotSatisfied As ImageView
+	Dim imgSatisfied As ImageView
+	Dim ImgVerySatisfied As ImageView
+	Dim ImgDelighted As ImageView
+	Dim FbTxt As EditText
+	Dim FbVal As EditText
+	Dim EdTxtName As EditText
+	Dim EdMob As EditText
+	Dim fdbtxt As String
+	Dim mobnum As String
+	Dim name As String
+	dim dataview as tab
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	Activity.LoadLayout("1")
+	If FirstTime Then
+		astreamO.Initialize(Me, "astreamO")
+		server.Initialize(port, "server")
+		client.Initialize("client")
+	End If
+	lblMyIP.Text = "My IP: " & server.GetMyIP
+	cvs.Initialize(Panel1)
+	
+	data.SetColumns(Array As String("Column 1", "Column 2", "Column 3"))
+	For i = 1 To 1000
+		Dim Row() As Object = Array ("a", "b", "c")
+		TableView1.Items.Add(Row)
+	Next
+End Sub
+
+#Region Connection related code
+Sub Activity_Resume
+	server.Listen
+	SetUIState
+	txtIP.Text = ip
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+	If UserClosed Then
+		astreamO.Close
+	End If
+	ip = txtIP.Text
+End Sub
+
+Sub btnConnect_Click
+	client.Connect(txtIP.Text,port, 30000)
+End Sub
+
+Sub SetUIState
+	btnConnect.Enabled = Not(astreamO.IsConnected)
+	btnSendDrawing.Enabled = astreamO.IsConnected
+	btnSendFile.Enabled = astreamO.IsConnected
+	btnSendForm.Enabled = astreamO.IsConnected
+	btnSendNumber.Enabled = astreamO.IsConnected
+	If astreamO.IsConnected Then lblStatus.Text = "Connected" Else lblStatus.Text = "Disconnected"
+End Sub
+
+Sub StartAstream(s As Socket)
+	astreamO.Start(s.InputStream, s.OutputStream)
+	SetUIState
+End Sub
+
+Sub AstreamO_Terminated
+	SetUIState
+	server.Listen
+	client.Close
+	client.Initialize("client")
+End Sub 
+
+Sub client_Connected (Successful As Boolean)
+	If Successful Then
+		StartAstream(client)
+	Else
+		ToastMessageShow("Error: " & LastException, True)
+	End If
+End Sub
+Sub Server_NewConnection (Successful As Boolean, NewSocket As Socket)
+	If Successful Then
+		StartAstream(NewSocket)
+	Else
+		ToastMessageShow("Error: " & LastException, True)
+	End If
+End Sub
+#End Region
+
+Sub btnSendDrawing_Click
+	astreamO.WriteBitmap("image", cvs.Bitmap)
+End Sub
+
+Sub btnSendFile_Click
+	Log("Not implemented...") 'uncomment the next line and choose a valid file.
+	'astreamO.WriteFile("file", File.DirRootExternal, "somefile.dat")
+End Sub
+
+Sub btnSendForm_Click
+	Dim p As Person
+	p.First = txtFirst.Text
+	p.Last = txtLast.Text
+	p.Animal = txtAnimal.Text
+	astreamO.WriteObject("form", p)
+End Sub
+
+Sub Panel1_Touch (Action As Int, X As Float, Y As Float)
+	cvs.DrawCircle(X, Y, 10dip, Colors.RGB(Rnd(0, 256), Rnd(0, 256), Rnd(0, 256)), True, 0)
+	Panel1.Invalidate
+End Sub
+
+
+Sub btnSendNumber_Click	
+	astreamO.WriteObject("simple value",txtAnimal.Text)
+End Sub
+
+Sub astreamO_NewObject(Key As String, Value As Object)
+	Select Key
+		Case "form"
+			Dim p As Person = Value
+			txtFirst.Text = p.First
+			txtLast.Text = p.Last
+			txtAnimal.Text = p.Animal
+		Case "simple value"
+			Dim number As String = Value
+			ToastMessageShow("Received lucky number: " & number, False)
+		Case "image"
+			Dim bmp As Bitmap = Value
+			Dim r As Rect
+			r.Initialize(0, 0, Panel1.Width, Panel1.Height)
+			cvs.DrawBitmap(bmp, Null, r)
+			Panel1.Invalidate
+		Case "file"
+			Dim fileName As String = Value
+			Log("Received file. File size: " & File.Size(astreamO.TempFolder, fileName))
+	End Select
+End Sub
+
+Sub astreamO_ObjectSent (Key As String)
+	Log("Object sent: " & Key)
+End Sub
+
+Sub btnFeedback_click
+	Activity.RemoveAllViews
+	Activity.LoadLayout("feedback")
+	
+End Sub
+
+Sub imgpoor_click
+	FbTxt.Text="Poor"
+	FbVal.Text="1"
+	mobnum=EdMob.Text
+	name=EdTxtName.Text
+	
+	If lblStatus.Text = "Connected" Then
+		If name.Length=0 Then
+			MsgboxAsync("Please Enter valid Name","Alert")
+			Return
+		End If
+		If mobnum.Length =10 Then
+			'fdbtxt=EdTxtName.Text & "," & EdMob.Text &","& FbTxt.Text & "," & FbVal.Text
+			fdbtxt= "INSERT INTO counter VALUES(" & """" & EdTxtName.Text & """" & "," & """" &  EdMob.Text & """" & "," & """" & FbTxt.Text & """" & "," & FbVal.Text  & ")"
+			astreamO.WriteObject("simple value",fdbtxt)
+			MsgboxAsync("Thanks for Sharing Feedback","Thanks")
+			EdTxtName.Text=""
+			EdMob.Text=""
+			Return
+		Else 		
+			MsgboxAsync("Please Enter 10 Digit Mobile number","Alert")
+		End If
+	Else
+		MsgboxAsync("Please Connect to WIFI","Alert")
+		Return
+	End If
+End Sub
+
+Sub imgNotSatisfied_click
+	FbTxt.Text="NotSatisfied"
+	FbVal.Text="2"
+	mobnum=EdMob.Text
+	name=EdTxtName.Text
+	If lblStatus.Text = "Connected" Then
+		If name.Length=0 Then
+			MsgboxAsync("Please Enter valid Name","Alert")
+			Return
+		End If
+		If mobnum.Length =10 Then
+			'fdbtxt=EdTxtName.Text & "," & EdMob.Text &","& FbTxt.Text & "," & FbVal.Text
+			fdbtxt= "INSERT INTO counter VALUES(" & """" & EdTxtName.Text & """" & "," & """" &  EdMob.Text & """" & "," & """" & FbTxt.Text & """" & "," & FbVal.Text  & ")"
+			astreamO.WriteObject("simple value",fdbtxt)
+			MsgboxAsync("Thanks for Sharing Feedback","Thanks")
+			EdTxtName.Text=""
+			EdMob.Text=""
+			Return
+		Else
+			MsgboxAsync("Please Enter 10 Digit Mobile number","Alert")
+		End If
+	Else
+		MsgboxAsync("Please Connect to WIFI","Alert")
+		Return
+	End If
+End Sub
+
+Sub imgSatisfied_click
+	FbTxt.Text="Satisfied"
+	FbVal.Text="3"
+	mobnum=EdMob.Text
+	name=EdTxtName.Text
+	If lblStatus.Text = "Connected" Then
+		If name.Length=0 Then
+			MsgboxAsync("Please Enter valid Name","Alert")
+			Return
+		End If
+		If mobnum.Length =10 Then
+			'fdbtxt=EdTxtName.Text & "," & EdMob.Text &","& FbTxt.Text & "," & FbVal.Text
+			fdbtxt= "INSERT INTO counter VALUES(" & """" & EdTxtName.Text & """" & "," & """" &  EdMob.Text & """" & "," & """" & FbTxt.Text & """" & "," & FbVal.Text  & ")"
+			astreamO.WriteObject("simple value",fdbtxt)
+			MsgboxAsync("Thanks for Sharing Feedback","Thanks")
+			EdTxtName.Text=""
+			EdMob.Text=""
+			Return
+		Else
+			MsgboxAsync("Please Enter 10 Digit Mobile number","Alert")
+		End If
+	Else
+		MsgboxAsync("Please Connect to WIFI","Alert")
+		Return
+	End If
+End Sub
+
+Sub ImgVerySatisfied_click
+	FbTxt.Text="VerySatisfied"
+	FbVal.Text="4"
+	mobnum=EdMob.Text
+	name=EdTxtName.Text
+	If lblStatus.Text = "Connected" Then
+		If name.Length=0 Then
+			MsgboxAsync("Please Enter valid Name","Alert")
+			Return
+		End If
+		If mobnum.Length =10 Then
+			'fdbtxt=EdTxtName.Text & "," & EdMob.Text &","& FbTxt.Text & "," & FbVal.Text
+			fdbtxt= "INSERT INTO counter VALUES(" & """" & EdTxtName.Text & """" & "," & """" &  EdMob.Text & """" & "," & """" & FbTxt.Text & """" & "," & FbVal.Text  & ")"
+			astreamO.WriteObject("simple value",fdbtxt)
+			MsgboxAsync("Thanks for Sharing Feedback","Thanks")
+			EdTxtName.Text=""
+			EdMob.Text=""
+			Return
+		Else
+			MsgboxAsync("Please Enter 10 Digit Mobile number","Alert")
+		End If
+	Else
+		MsgboxAsync("Please Connect to WIFI","Alert")
+		Return
+	End If
+End Sub
+
+Sub ImgDelighted_click
+	FbTxt.Text="Delighted"
+	FbVal.Text="5"
+	mobnum=EdMob.Text
+	name=EdTxtName.Text
+	If lblStatus.Text = "Connected" Then
+		If name.Length=0 Then
+			MsgboxAsync("Please Enter valid Name","Alert")
+			Return
+		End If
+		If mobnum.Length =10 Then
+			'fdbtxt=EdTxtName.Text & "," & EdMob.Text &","& FbTxt.Text & "," & FbVal.Text
+			fdbtxt= "INSERT INTO counter VALUES(" & """" & EdTxtName.Text & """" & "," & """" &  EdMob.Text & """" & "," & """" & FbTxt.Text & """" & "," & FbVal.Text  & ")"
+			astreamO.WriteObject("simple value",fdbtxt)
+			MsgboxAsync("Thanks for Sharing Feedback","Thanks")
+			EdTxtName.Text=""
+			EdMob.Text=""
+			Return
+		Else
+			MsgboxAsync("Please Enter 10 Digit Mobile number","Alert")
+		End If
+	Else
+		MsgboxAsync("Please Connect to WIFI","Alert")
+		Return
+	End If
+End Sub
